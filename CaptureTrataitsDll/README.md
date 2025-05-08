@@ -35,7 +35,7 @@ Windows 以外では `.so` を生成します。
 
 - パス0: 1 pass で AABB を取得  
 - パス1: 点密度を判定し  
-  - 稠密 ⇒ フラットグリッド  
+  - 高密度 ⇒ フラットグリッド  
   - 疎 ⇒ ハッシュグリッド  
 - パス2: 2-D Delaunay 分割 (CGAL / OpenCV)  
 - パス3: (x,y)→元インデックス解決  
@@ -100,7 +100,7 @@ LogFn を渡すと、Emoji + 計測付きログが得られます。
 | CGAL(Release/O2, AVX2) | 30 k | ≈ 32 ms       |
 | OpenCV Subdiv2D     | 30 k   | ≈ 82 ms       |
 
-\* i7-12700H / Win 11 / MSVC 19.39・OpenMP ON 時計測。
+\* i7-5820k / Win 11 / MSVC 19.39・OpenMP ON 時計測。
 
 ## ⚙️ ビルドオプション
 
