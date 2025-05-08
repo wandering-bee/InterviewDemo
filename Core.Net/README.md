@@ -1,5 +1,13 @@
 # 🧩 SledChannel — 非同期 TCP 通信モジュール
 
+---
+
+### 🔍 GUI
+
+![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/TcpTest.png)
+
+---
+
 ## 📝 キーワード
 - TCP 全二重
 - リクエスト-レスポンス
