@@ -66,9 +66,23 @@ Console.WriteLine(Encoding.ASCII.GetString(rsp.Span)); // → "PONG"
 ## 🚀 パフォーマンスメモ
 
 ループバック・シングルコア環境で **1 万リクエスト** を  
+
 - Zen 4 = **3.9 秒**  
-- Haswell-E = **6.2 秒**  
+- Haswell-E = **6.2 秒**
+  
 で完走。※ネットワーク遅延は含まれていません
+
+<div align="left">
+
+$$
+\frac{10\,000}{3.9\ \text{s}} = 2\,564\ \text{req/s} \;\approx\; 154\ \text{k req/min}
+$$
+
+$$
+\frac{10\,000}{6.2\ \text{s}} = 1\,613\ \text{req/s} \;\approx\; 97\ \text{k req/min}
+$$
+
+</div>
 
 ## 🧠 まとめ
 
