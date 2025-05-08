@@ -22,7 +22,8 @@ TcpServer は SledChannel の開発・検証専用に設計した軽量な仮想
 
 - PipeReader による CR／CRLF 双対応フレーム分割  
 - クライアントごとに CancellationTokenSource を管理し、タイムアウト・キャンセルを即時伝搬  
-- 全応答を辞書化してロックレス高速送出  
+- 全応答を辞書化してロックレス高速送出
+  全コマンド応答を Dictionary<int,string> にプリロードし、Volatile.Read でロックレス取得
 
 ## 🚀 クイックスタート
 
