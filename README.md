@@ -22,13 +22,13 @@ WinUI3 アプリが中心となり、3D ビジュアライザと通信サーバ�
 
 ## 🧩 モジュール構成
 
-| モジュール名              | 種別         | 役割                              |
-|---------------------------|--------------|-----------------------------------|
-| `Demo.Showcase.App`       | WinUI3アプリ    | 点群描画クライアント             |
-| `Core.VGV`                | WinForms + D3D   | 点群生成・再構成・3D表示・Pipe通信 |
-| `Core.Net`                | .NET ライブラリ | TCP/IP 通信の抽象化（接続・フレーム化など）|
-| `Core.Server`             | .NET EXE(Console)| 通信応答専用サーバ（負荷テスト用途）|
-| `CaptureTrataitsDll`      | C++ DLL      | Core.VGV 内で呼び出される高速再構成エンジン|
+| モジュール名              | 種別              | 役割                                      |
+|---------------------------|-------------------|-------------------------------------------|
+| `Demo.Showcase.App`       | WinUI3アプリ       | 点群描画クライアント                       |
+| `Core.VGV`                | WinForms + D3D    | 点群生成・再構成・3D表示・Pipe通信          |
+| `Core.Net`                | .NET ライブラリ    | TCP/IP 通信の抽象化（接続・フレーム化など）  |
+| `Core.Server`             | .NET EXE(Console) | 通信応答専用サーバ（負荷テスト用途）         |
+| `CaptureTrataitsDll`      | C++ DLL           | Core.VGV 内で呼び出される高速再構成エンジン  |
 
 ---
 
@@ -48,18 +48,26 @@ Connect/Frame/SendLoop 等の通信機構を統一インタフェースとして
 
 ---
 
-## 📦 処理フロー
+## 🧩 システム構成
+
+本デモは、以下の2プロセスによって構成されます。
+
+```
 [Demo.Showcase.App]
     ├─ 起動 → Core.VGV.exe（点群生成・再構成・3D描画）
-    │        ⇄ Named Pipe（状態・指令同期）
-    └─ 起動 → Core.Server.exe（通信ストレステスト）
+    │        ⇄ Named Pipe による状態・指令の同期
+    └─ 起動 → Core.Server.exe（通信ストレステスト用サーバ）
+```
 
-[Core.VGV]
-    ⇓ CaptureTrataitsDll 経由で点群生成
-    ⇓ CGALベースの再構成
-    ⇓ DirectX によるリアルタイム3D描画
+## 🔁 処理フロー（Core.VGV）
+```
+Core.VGV.exe
+    ⇓ CaptureTrataitsDll 経由でセンサ点群を取得
+    ⇓ CGAL ベースのアルゴリズムにより構造を再構成
+    ⇓ DirectX を用いてリアルタイム 3D 表示
+```
 
----
+> 🧠 Core.VGV は視覚化処理の中心となるモジュールであり、外部 DLL（CaptureTrataitsDll）からの点群取得と、GPU による高速描画を担います。構造再構成には CGAL を使用し、高密度なジオメトリ処理にも対応しています。
 
 ## 📊 性能指標
 
@@ -81,11 +89,74 @@ Connect/Frame/SendLoop 等の通信機構を統一インタフェースとして
 
 ## 🧪 実行方法
 
-1. `CaptureTrataitsDll` を **Visual Studio** にて C++17 DLL としてビルド
-2. `Core.Server` を起動（.NET 6 コンソールアプリ）  
-  ポート番号・FPS 等は `Properties.Settings` にて調整可能
-3. `Demo.Showcase.App` を起動  
-  TCPサーバへ自動接続し、点群を描画
+# CaptureTrataitsDll ― ビルド & 最適化設定
+
+🔧 本 DLL は Core.VGV との連携用に設計された C++ ネイティブライブラリであり、高速な点群処理を目的としています。
+
+## ビルド設定（Release | x64）
+
+| カテゴリ             | 設定内容                                 |
+|----------------------|------------------------------------------|
+| 最適化               | /O2 速度最優先                           |
+| 警告レベル           | /W4（厳格コンパイル）                    |
+| ランタイム           | /MD - マルチスレッド DLL                 |
+| 関数レベルリンク     | /Gy（関数単位でのリンク）                |
+| リンク時コード生成   | /LTCG 有効                               |
+| SIMD 拡張命令        | /arch:AVX2                               |
+| 並列化               | OpenMP 有効（/openmp）                   |
+| 使用ライブラリ       | OpenCV 4.11 / CGAL + Boost・GMP・MPFR   |
+| プリコンパイルヘッダ | 不使用                                   |
+| ビルド構成           | Release                                   |
+
+## 実行時の注意
+
+生成された DLL および PDB ファイルは、**Core.VGV/bin/Release/net8.0/** へ手動でコピーしてください。パスが通らない場合、実行時に `DllNotFoundException` が発生します。
+
+## 関連モジュールとビルドコマンド
+
+### Core.Net
+```
+dotnet build Core.Net/Core.Net.csproj -c Release
+```
+依存パッケージ：
+- System.Threading.Channels
+- System.IO.Pipelines（.NET 8 同梱）
+
+### Core.Server
+```
+dotnet build Core.Server/Core.Server.csproj -c Release
+```
+依存パッケージ：
+- System.IO.Pipelines
+- Spectre.Console
+
+### Core.VGV
+```
+dotnet build Core.VGV/Core.VGV.csproj -c Release
+```
+依存パッケージ：
+
+| カテゴリ       | パッケージ名                                 |
+|----------------|----------------------------------------------|
+| 点群・幾何処理 | NetTopologySuite 2.6.0                        |
+| 画像処理       | OpenCvSharp4 系列 (4.10.0.*)                 |
+| GPU 描画       | OpenTK, OpenTK.GLControl                     |
+| ログ出力       | Serilog + Serilog.Sinks.Console 他          |
+| 画像読込       | StbImageSharp 2.30.15                        |
+
+### Demo.Showcase.App
+```
+dotnet build Demo.Showcase.App/Demo.Showcase.App.csproj -c Release
+dotnet run --project Demo.Showcase.App -c Release
+```
+
+追加パッケージなし。起動時に Core.Server / Core.VGV を自動で起動・連携します。
+
+## 推奨ビルド順
+※ DLL を最初にビルドし、Core.VGV/bin/... へコピー
+```
+CaptureTrataitsDll → Core.Net → Core.Server → Core.VGV → Demo.Showcase.App
+```
 
 ---
 
@@ -95,7 +166,7 @@ Connect/Frame/SendLoop 等の通信機構を統一インタフェースとして
   構成力・性能意識・モジュール性のアピール
 
 - 🔬 **軽量アルゴリズム評価**  
-  PCL / Open3D 代替としての定量比較
+  プログラミング技術の比較と評価
 
 - 🧩 **アーキテクチャ設計のテンプレート**  
   通信 → 処理 → 表示 の標準構成提示
