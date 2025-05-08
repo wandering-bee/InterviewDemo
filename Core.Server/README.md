@@ -4,7 +4,7 @@
 
 ### 🔍 GUI
 
-![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/Saver.png)
+![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/TcpSaver.png)
 
 ---
 
