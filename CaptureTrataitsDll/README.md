@@ -89,8 +89,8 @@ LogFn を渡すと、Emoji + 計測付きログが得られます。
 ```yaml
 🔄 ReconstructAA: begin
 📦 use flat grid
-🔄 Delaunay     14.18 ms
-✅ ReconstructAA: ok        32.45 ms
+🔄 Delaunay     32.45 ms
+✅ ReconstructAA: ok        35 ms
 ```
 
 ## ⏱️ 性能スナップショット
