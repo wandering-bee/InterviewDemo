@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Demo.Showcase.LatencyHistogram"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 根 Canvas：我们手动在 code-behind 里画 -->
+    <Canvas x:Name="Root"
+            Background="{ThemeResource SystemControlAcrylicWindowBrush}" />
+
+</UserControl>

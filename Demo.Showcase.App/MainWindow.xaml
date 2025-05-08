@@ -1,0 +1,124 @@
+<Window
+    x:Class="Demo.Showcase.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:Demo.Showcase"
+    mc:Ignorable="d"
+    Title="SLED Demo">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+        <!-- 顶部标题栏 -->
+        <Grid x:Name="CustomTitleBar" Background="Transparent" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="40">
+            <TextBlock Text="SLED Communication Demo" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        </Grid>
+
+        <!-- 左侧功能面板 -->
+        <Grid x:Name="RootPanel" Width="250" VerticalAlignment="Stretch" HorizontalAlignment="Left" Margin="10,40,10,10">
+
+            <Border Background="#FFCBCBCB" Height="30" VerticalAlignment="Top" Margin="0,0,0,10">
+                <TextBlock Text="Network Settings" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black"/>
+            </Border>
+
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,10,10">
+                <StackPanel Orientation="Horizontal" Margin="0,30,0,0">
+                    <TextBlock Text="IP:" Width="50" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TBxAddress"  Width="180"
+                     Text="{Binding Ip, Mode=TwoWay}"
+                     PlaceholderText="Enter IP (default: 127.0.0.1)"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,30,0,0">
+                    <TextBlock Text="Port:" Width="50" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TBxPort" Width="180"
+                     Text="{Binding Port, Mode=TwoWay}"
+                     PlaceholderText="Enter Port (default: 12006)"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- IPv4 和 Mask 输入区域的滑块控件 -->
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,10,10" >
+                <Slider Name="IpAddressSlider" Minimum="0" Maximum="1" Value="0" VerticalAlignment="Center" HorizontalAlignment="Left" Width="180" Margin="50,50,0,0" ValueChanged="IpAddressSlider_ValueChanged"/>
+                <Slider Name="PortSlider" Minimum="0" Maximum="1" Value="0" VerticalAlignment="Center" HorizontalAlignment="Left" Width="180" Margin="50,30,0,0" ValueChanged="PortSlider_ValueChanged"/>
+            </StackPanel>
+
+            <Ellipse Width="20" Height="20" Fill="#8B0000" Stroke="White" StrokeThickness="1" Name="ConnectionStatusLight" Margin="-180,-340,0,0"/>
+            <Button Content="Connect" Width="230" Margin="10,-330,10,10" Canvas.ZIndex="100" Command="{Binding ConnectCommand}"/>
+
+
+
+            <TextBlock Text="Recent Logs" FontSize="14" FontWeight="SemiBold" Margin="0,210,0,5"/>
+
+            <StackPanel Orientation="Horizontal" Margin="10,-250,10,10">
+                <Button Content="Start Server"
+                    Command="{Binding StartServerCommand}"/>
+
+                <Button Content="Stop Server" Margin="39,10,10,10"
+                    Command="{Binding StopServerCommand}"/>
+
+
+            </StackPanel>
+
+        </Grid>
+
+
+        <!-- 右侧主内容区（修正版） -->
+        <Border Background="Transparent" BorderBrush="#FFB0B0B0" BorderThickness="2" Margin="270,50,10,10">
+            <Pivot Margin="10,10,10,10">
+
+                <!-- 通信测试 -->
+                <PivotItem Header="Connect Test">
+                    <StackPanel Margin="10,10,10,10" Spacing="10">
+                        <TextBox PlaceholderText="Enter Command..." Name="CommandBox" Margin="0,0,0,10"/>
+                        <Button Content="Send Command" Click="SendCommandButton_Click" Margin="0,0,0,10"/>
+                        <TextBlock Text="Response:" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,0"/>
+                        <TextBlock Name="ResponseBox" TextWrapping="Wrap" Margin="0,0,0,0"/>
+                    </StackPanel>
+                </PivotItem>
+
+                <!-- Axone Start：呼出 WinForms 程序 -->
+                <PivotItem Header="Axone Start">
+                    <StackPanel Margin="10" Spacing="10">
+                        <!-- 说明文字，可按需保留 / 删除 -->
+                        <TextBlock Text="Run Axone (Core.VGV.exe)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                        <!-- 运行按钮 -->
+                        <Button  x:Name="RunAxoneButton" Content="Run" Click="RunAxoneButton_Click" Margin="0,0,0,10"/>
+
+                        <Button Content="Send Ping" Click="SendPingButton_Click" Margin="0,0,0,10"/>
+
+                        <!-- 运行结果 / 日志（可选） -->
+                        <TextBlock x:Name="AxoneStartResultBox" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </PivotItem>
+
+                <!-- 性能压测 -->
+                <!-- xmlns:local 一般在窗口根已经声明；若没有就加上 -->
+                <PivotItem Header="Benchmark">
+                    <StackPanel Margin="10" Spacing="10">
+                        <Button Content="Start Benchmark" Click="StartBenchmarkButton_Click"/>
+                        <ProgressBar x:Name="BenchmarkProgressBar" Height="20"/>
+                        <TextBlock  x:Name="StatsLine" FontFamily="Consolas" FontSize="14"/>
+
+                        <!-- 彩色直方图 -->
+                        <local:LatencyHistogram x:Name="Hist" Height="200"/>
+
+                        <!-- 文字汇总（保留） -->
+                        <TextBox   x:Name="BenchmarkResultBox" Height="120" FontFamily="Consolas" TextWrapping="Wrap" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    </StackPanel>
+                </PivotItem>
+
+
+
+                <!-- 日志 -->
+                <PivotItem Header="Logs">
+                    <ListView Name="FullLogList" Margin="10,10,10,10"/>
+                </PivotItem>
+
+            </Pivot>
+        </Border>
+
+    </Grid>
+</Window>
