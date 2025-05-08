@@ -1,5 +1,13 @@
 # 🖥️ TcpServer — SledChannel 開発用バーチャルサーバ
 
+---
+
+### 🔍 GUI
+
+![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/Saver.png)
+
+---
+
 ## 🚩 目的と概要
 TcpServer は SledChannel の開発・検証専用に設計した軽量な仮想デバイスエミュレータです。  
 ローカルで起動するだけで、認証付き ASCII／Shift-JIS テキストプロトコルを模擬し、  
