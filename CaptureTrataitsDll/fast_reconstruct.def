@@ -1,0 +1,4 @@
+LIBRARY "fast_reconstruct"
+EXPORTS
+    ReconstructAA     @1
+    FreeMesh          @2
