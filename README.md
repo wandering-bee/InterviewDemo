@@ -25,7 +25,7 @@ WinUI3 アプリが中心となり、3D ビジュアライザと通信サーバ�
 | モジュール名              | 種別              | 役割                                      |
 |---------------------------|-------------------|-------------------------------------------|
 | `Demo.Showcase.App`       | WinUI3アプリ       | 点群描画クライアント                       |
-| `Core.VGV`                | WinForms + D3D    | 点群生成・再構成・3D表示・Pipe通信          |
+| `Core.VGV`                | WinForms + 3D     | 点群生成・再構成・3D表示・Pipe通信          |
 | `Core.Net`                | .NET ライブラリ    | TCP/IP 通信の抽象化（接続・フレーム化など）  |
 | `Core.Server`             | .NET EXE(Console) | 通信応答専用サーバ（負荷テスト用途）         |
 | `CaptureTrataitsDll`      | C++ DLL           | Core.VGV 内で呼び出される高速再構成エンジン  |
@@ -37,7 +37,7 @@ WinUI3 アプリが中心となり、3D ビジュアライザと通信サーバ�
 - 🧠 WinUI3 × Named Pipe 通信
 中心アプリから各プロセスを起動・制御し、状態を双方向同期
 
-- 🧩 点群生成・3D再構成・DirectX描画
+- 🧩 点群生成・3D再構成
 Core.VGV にて DLL 経由で点群を生成・再構成し、GPU により描画
 
 - 📶 TCP通信負荷テストサーバ
@@ -62,9 +62,9 @@ Connect/Frame/SendLoop 等の通信機構を統一インタフェースとして
 ## 🔁 処理フロー（Core.VGV）
 ```
 Core.VGV.exe
-    ⇓ CaptureTrataitsDll 経由でセンサ点群を取得
+    ⇓ アルゴリズムを用いてリアルタイム 3D 表示
+    ⇓ CaptureTrataitsDll 経由でデータを生成
     ⇓ CGAL ベースのアルゴリズムにより構造を再構成
-    ⇓ DirectX を用いてリアルタイム 3D 表示
 ```
 
 > 🧠 Core.VGV は視覚化処理の中心となるモジュールであり、外部 DLL（CaptureTrataitsDll）からの点群取得と、GPU による高速描画を担います。構造再構成には CGAL を使用し、高密度なジオメトリ処理にも対応しています。
@@ -179,6 +179,5 @@ CaptureTrataitsDll → Core.Net → Core.Server → Core.VGV → Demo.Showcase.A
 ## 📘 補足事項
 
 - 各モジュール直下の `README.md` はテンプレート状態です。必要に応じて機能・インタフェースごとに記述を追加してください。
-- `Core.VGV`（GPUビジュアライザ）は現在未使用ですが、将来的な高速描画対応のために設計済みです。
 - 通信はすべて CRLF（`\r\n`）区切りの簡易フレーミングを採用しています。
 - `.vsconfig` や `launchSettings.json` などの開発支援ファイルは必要に応じて追加可能です。
