@@ -34,15 +34,15 @@
   └─▶ ❶ Reconstruct Core (C++ fast_reconstruct)          
         └─▶ ❷ Managed Bridge (CaptureTrataits P/Invoke)  
               └─▶ ❸ GPU Resource Layer                 
-                    ├─ GPUStreamBuffer<T> (永続マップ RingBuffer)
-                    └─ VertexArrayObject<T> (DSA & 自動レイアウト)
+                    ├─ GPUStreamBuffer<T> (永続マッピング済みのリングバッファ)
+                    └─ VertexArrayObject<T> (Direct State Access(DSA) & 自動レイアウト)
                         └─▶ ❹ Rendering Pipeline (ViewEngine)
                               └─▶ ❺ Interaction (GLInteractor)
 ```
 
 ---
 
-## 3.1 🧱 サブシステム詳細
+### 3.1 🧱 サブシステム詳細
 
 | #   | サブシステム       | 主要コード                  | ハイライト |
 |-----|--------------------|-----------------------------|------------|
