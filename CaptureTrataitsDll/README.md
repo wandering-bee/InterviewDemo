@@ -105,8 +105,9 @@ LogFn を渡すと、Emoji + 計測付きログが得られます。
 <div align="left">
 
 $$
-\text{pts/s} = \frac{\text{フレーム頂点数}}{\text{フレーム時間(ms)}/1000}
+\frac{30\,000}{32/1000} = 937\,500 \ \text{pts/s} \approx 0.94\ \text{M pts/s}
 $$
+
 </div>
 
 \* i7-5820k / Win 11 / MSVC 19.39・OpenMP ON 時計測。
