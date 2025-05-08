@@ -50,7 +50,7 @@ Connect/Frame/SendLoop 等の通信機構を統一インタフェースとして
 
 ## 🧩 システム構成
 
-本デモは、以下の2プロセスによって構成されます。
+本デモは、WinUI3アプリ（Demo.Showcase.App）と、それが起動する2つの外部プロセスで構成されます。
 
 ```
 [Demo.Showcase.App]
