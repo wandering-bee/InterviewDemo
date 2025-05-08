@@ -1,128 +1,44 @@
-# Sled TCP Server 🚦
+# 🖥️ TcpServer — SledChannel 開発用バーチャルサーバ
 
-Shift-JIS ベースのコマンドを扱う 軽量・コンカレント TCP サーバー
+## 🚩 目的と概要
+TcpServer は SledChannel の開発・検証専用に設計した軽量な仮想デバイスエミュレータです。  
+ローカルで起動するだけで、認証付き ASCII／Shift-JIS テキストプロトコルを模擬し、  
+多クライアント・高頻度通信・タイムアウト挙動を手軽に再現できます。
 
----
+## 🔑 プロトコル仕様
 
-## 📖 目次
+| 項目         | 内容                                 |
+|--------------|--------------------------------------|
+| 最大接続数   | 6 クライアント                        |
+| フレーミング | CR 又は CRLF 末尾                    |
+| エンコード   | Shift-JIS（RD **** 系）／ASCII       |
+| 認証         | `HELLO <secret>` → `OK\r\n`         |
+| 切断         | `BYE <secret>` → `BYE\r\n`         |
+| コマンド辞書 | `RD 3001〜RD 6000` → `0\r\n`        |
+| 未定義       | `?\r\n`                             |
+| 典型応答     | `PING` → `OK\r\n`                   |
 
-- [概要](#概要)  
-- [主な機能](#主な機能)  
-- [ビルド & 実行](#ビルド--実行)  
-- [プロトコル仕様](#プロトコル仕様)  
-- [ログ出力](#ログ出力)  
-- [終了 & クリーンアップ](#終了--クリーンアップ)  
-- [拡張ポイント](#拡張ポイント)  
-- [ライセンス](#ライセンス)  
+## ⚙️ 実装ポイント
 
----
+- PipeReader による CR／CRLF 双対応フレーム分割  
+- クライアントごとに CancellationTokenSource を管理し、タイムアウト・キャンセルを即時伝搬  
+- 全応答を辞書化してロックレス高速送出  
 
-## 📝 概要
-
-エントリーポイント `Program.cs` は CLI で渡された `--port` と `--secret` を読み取り、  
-`TcpServer` を非同期で起動します。最大 **6 クライアント** まで同時接続でき、  
-**Shift-JIS / CRLF 終端**のコマンドを高速にパースして返信します。
-
----
-
-## 🚀 主な機能
-
-| 区分         | 内容 |
-|--------------|------|
-| 同時接続数     | 最大 6 クライアント ― 超過時は即座に拒否 |
-| 認証         | `HELLO <secret>` / `BYE <secret>` ハンドシェイク；シークレット不一致時は `ERR` 応答 |
-| 辞書応答     | `RD 3001`〜`RD 6000` → `0\r\n`；`PING` → `OK\r\n`；未定義 → `?\r\n` |
-| エンコーディング | 受信・送信ともに Shift-JIS；内部は `ReadOnlyMemory<byte>` でゼロコピー |
-| ログ         | Spectre.Console によるカラータグ（[Info], [Warn] など） |
-| 安全終了     | 標準入力へ `EXIT <procSecret>` を流すと全ソケットを安全にクローズし終了 |
-
----
-
-## ⚙️ ビルド & 実行
-
-.NET 8.0 以降を前提にしています。必要に応じて `Core.Server.csproj` の `TargetFramework` を調整してください。
+## 🚀 クイックスタート
 
 ```bash
-# 依存取得（Spectre.Console）
-dotnet restore
-
-# リリースビルド
-dotnet publish -c Release -o out
-
-# 実行例（ポート 15000, プロセス用シークレットを変更）
-./out/Sled.Server --port 15000 --secret ABCD1234
+dotnet run --project TcpServer --port 9001 --secret mypass
 ```
 
-| オプション | 既定値 | 説明 |
-|------------|--------|------|
-| `--port`   | 12006  | 待受ポート番号 |
-| `--secret` | SLED-LOCAL-DEV-PROC | 終了ハンドシェイク用シークレット |
+1. `HELLO mypass` を送信 → `OK\r\n`  
+2. 任意コマンドを送信 (`PING`, `RD 3001` など)  
+3. 終了時は `BYE mypass` を送信  
 
-引数解析は `ArgsExtensions.GetOption` により実装されています。
+> ビルド要件: .NET 6 以上／シングルファイル publish 対応。  
+> 実装は別リポジトリ `<coming soon>` にて公開予定です。
 
----
+## 🧪 テスト活用例
 
-## 📡 プロトコル仕様
-
-```
-# 文字コード : Shift-JIS
-# 区切り     : CR または CRLF
-
-1. 認証
-   クライアント → サーバー : "HELLO <secret>\r\n"
-   サーバー   → クライアント : "OK\r\n" (成功) / "ERR\r\n" (失敗)
-
-2. 通常コマンド
-   ・"RD 3001"〜"RD 6000" : 常に "0\r\n" を返却
-   ・"PING"               : "OK\r\n" を返却
-   ・その他               : "?\r\n" を返却
-
-3. 切断
-   クライアント → サーバー : "BYE <secret>\r\n"
-   サーバー   → クライアント : "BYE\r\n" → ソケットクローズ
-```
-
-受信バッファは `System.IO.Pipelines` を用い、CR(LF) でフレーム分割しています。  
-コマンド辞書は `Dictionary<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>>` により構成され、`SequenceEqual` ベースで高速検索します。
-
----
-
-## 🖨️ ログ出力
-
-| レベル   | 例                               | 用途     |
-|----------|----------------------------------|----------|
-| Info     | `[Info] Listening on 0.0.0.0:12006` | 一般情報 |
-| Success  | `[Success] Client connected.`    | 正常完了 |
-| Warn     | `[Warn] Connection refused`      | 軽微な問題 |
-| Error    | `[Error] Unhandled exception`    | 重大エラー |
-| Recv     | `[Recv] HELLO …`                 | 受信データ |
-| Send     | `[Send] OK`                      | 送信データ |
-
-`Spectre.Console` のマークアップにより、ターミナルで色分け表示されます。
-
----
-
-## 🧹 終了 & クリーンアップ
-
-- **Ctrl-C**：`Console.CancelKeyPress` ハンドラで `CancellationToken` を発火し安全終了  
-- **親プロセス連携**：STDIN へ `EXIT <procSecret>` を書き込むと同様に全リソースを解放して終了  
-
-`TcpServer.DisposeAsync()` はすべてのクライアント `CancellationTokenSource` をキャンセルし、ソケットを確実に閉じます。
-
----
-
-## 🔧 拡張ポイント
-
-| 項目               | 方法 |
-|--------------------|------|
-| コマンド辞書を増やす | `BuildDict()` に追加ロジックを記述 |
-| 同時接続数を増減     | `TcpServer._maxConnections` を変更 |
-| 認証アルゴリズム     | `HandleClientAsync()` 内の HELLO / BYE 解析を差し替え |
-| ログフォーマット     | `Logger` クラスの各メソッドをカスタマイズ |
-
----
-
-## 📜 ライセンス
-
-現時点では未設定（**非商用・社内利用限定**）  
-**商用ライセンスが必要な場合はリポジトリ管理者までご連絡ください。**
+- **並列リクエスト保証**：複数 `CallAsync` を同時発行し、レスポンス順序を確認  
+- **タイムアウト挙動**：意図的に応答を遅延させ、`TimeoutException` 処理を検証  
+- **負荷試験**：`wrk`・`bombardier` 等で 10 万 req/s 超えを想定したストレステスト  
