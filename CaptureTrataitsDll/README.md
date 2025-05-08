@@ -1,161 +1,121 @@
+
 # Fast Reconstruct 🛰️
+リアルタイム点群 → メッシュ再構築 DLL
 
-リアルタイム点群を CPU 上で高速に三角メッシュ化し、GPU へ直接アップロードする DLL
+## 📡 プロジェクト概要
+Fast Reconstruct は XYZ 点群を CPU 上で 2-D Delaunay 分割 → 法線 & ターボ LUT 彩色 → メッシュ に変換し、  
+結果を 純 C インターフェース でエクスポートする軽量 DLL です。
 
----
+- CGAL または OpenCV Subdiv2D をコンパイル時に切替え  
+- ハッシュ／フラットグリッドで重複点除去  
+- OpenMP 対応の並列法線計算  
+- Tiny RAII ロガーで段階別タイミングを計測  
 
-## 📖 目次
+## 🛠️ 依存 & ビルド
 
-- [プロジェクト概要](#プロジェクト概要)  
-- [主な特長](#主な特長)  
-- [クイックスタート](#クイックスタート)  
-- [API 概要](#api-概要)  
-- [性能と最適化の歩み](#性能と最適化の歩み)  
-- [ログ & デバッグ](#ログ--デバッグ)  
-- [オプションマクロと依存ライブラリ](#オプションマクロと依存ライブラリ)  
-- [ライセンス](#ライセンス)  
+| 区分       | 必須 / 任意 | バージョン目安 | 用途               |
+|------------|--------------|----------------|--------------------|
+| OpenCV     | 必須 (デフォルト) | ≥ 4.8         | Subdiv2D Delaunay |
+| CGAL       | USE_CGAL 定義時   | ≥ 5.6         | 高速 Delaunay (推奨) |
+| OpenMP     | _OPENMP 定義時   | -             | 並列法線 & LUT 生成 |
+| C++17      | 必須           | -             | 言語機能            |
 
----
-
-## 🛰 プロジェクト概要
-
-`fast_reconstruct` は `XYZ+RGBA` 点群ストリームを以下のパイプラインで処理します：
-
-- Delaunay 分割（CGAL／Subdiv2D）  
-- 高低差 LUT 彩色 & 法線生成  
-- ゼロコピーで GPU へアップロード  
-- OpenGL による対話描画  
-
-既定では CGAL Delaunay を使用し、  
-**30k 点 ≈ 32ms（8 コア）** を実現。  
-DLL は **純 C インターフェース** により、`C# / Python` などから P/Invoke や FFI 経由で呼び出せます。
-
----
-
-## 🚀 主な特長
-
-| 区分             | 内容 |
-|------------------|------|
-| 速度             | 30k 点の再構築が ≈ 32ms |
-| 最小インターフェース | `fast_reconstruct.h` だけで利用可能 |
-| 並列化           | OpenMP により自動スレッドスケール |
-| メッシュ重複排除 | Grid / Hash の二段構成で疎密両対応 |
-| 彩色             | `constexpr LUT` によるゼロアロケーション |
-| 軽量ログ         | Emoji + RAII タイマーでオンオフ即切替 |
-| クロスプラットフォーム | Windows / Linux, C++17, CMake & Visual Studio 対応 |
-
----
-
-## ⚡ クイックスタート
-
-### 1. クローン
+### CMake ビルド例
 
 ```bash
-git clone --recursive https://github.com/yourname/fast_reconstruct.git
-```
-
-### 2. 主要依存
-
-| ライブラリ | バージョン | 用途 |
-|------------|------------|------|
-| CGAL       | ≥ 5.6      | `USE_CGAL` 定義時に使用（推奨） |
-| OpenCV     | ≥ 4.8      | CGAL が無い場合の代替 Delaunay |
-| OpenMP     | 任意       | コンパイラ同梱で可 |
-
-### 3. ビルド例（CMake + CGAL）
-
-```bash
-cmake -B build -DUSE_CGAL=ON -DCMAKE_BUILD_TYPE=Release
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DUSE_CGAL=ON
 cmake --build build --config Release
 ```
 
-生成物 `fast_reconstruct.(dll|so)` とヘッダを配布すれば OK です。
+生成物 `fast_reconstruct.dll / fast_reconstruct.lib / fast_reconstruct.h` を  
+消費側プロジェクトに配置してください。  
+Windows 以外では `.so` を生成します。
 
----
+## 🚀 パイプライン概要
 
-## 🧠 API 概要
+- パス0: 1 pass で AABB を取得  
+- パス1: 点密度を判定し  
+  - 稠密 ⇒ フラットグリッド  
+  - 疎 ⇒ ハッシュグリッド  
+- パス2: 2-D Delaunay 分割 (CGAL / OpenCV)  
+- パス3: (x,y)→元インデックス解決  
+- パス4-7:  
+  - LUT 彩色（Turbo 1275 色）  
+  - 法線累積（OpenMP 対応）  
+  - 正規化  
+- パス8: Mesh 構造体へ詰替え & 返却  
 
-すべて `POD 構造体 + 列挙型` でエクスポートされており、安全に言語間で受け渡し可能です。完全な定義は `fast_reconstruct.h` を参照してください。
+## 🧩 API リファレンス
 
-### 関数一覧
+### 主要型
+
+```cpp
+struct Vec3f  { float x, y, z; };
+struct VertexF { Vec3f pos, nor, col; };
+struct Mesh   { VertexF* verts; uint32_t* idx;
+                uint32_t vCnt,  iCnt; };
+
+enum class ReconstructMode : uint32_t { Subdiv = 0, Topology = 1 };
+enum class Err : uint32_t { Ok, EmptyInput, AllocFail };
+using  LogFn = void(*)(const char*);         // 可 nullptr
+```
+
+### エクスポート関数
 
 | 関数 | 説明 |
 |------|------|
-| `Err ReconstructAA(const Vec3f* pts, uint32_t cnt, ReconstructMode mode, double tol, Mesh* out, LogFn cb)` | 点群 → メッシュのメインエントリ |
-| `void FreeMesh(Mesh* m)` | `ReconstructAA` が確保したバッファを解放 |
+| `Err ReconstructAA(const Vec3f* pts, uint32_t cnt, ReconstructMode mode, double tol, Mesh* out, LogFn cb=nullptr)` | 点群 ➜ メッシュ主関数 |
+| `void FreeMesh(Mesh* m)` | `ReconstructAA` が確保したバッファ解放 |
 
-### 代表的な構造体
-
-```cpp
-struct Vec3f   { float x, y, z; };
-struct VertexF { Vec3f pos, nor, col; };
-struct Mesh    { VertexF* verts; uint32_t* idx;
-                 uint32_t vCnt, iCnt; };
-enum class Err { Ok, EmptyInput, AllocFail };
-```
-
-### 最小コード例
+### 最小使用例
 
 ```cpp
 #include "fast_reconstruct.h"
-
 int main() {
-    std::vector<Vec3f> pc = loadPointCloud();   // 点群を読み込み
+    std::vector<Vec3f> cloud = loadPCD();
     Mesh mesh{};
-    auto err = ReconstructAA(pc.data(), pc.size(),
-                             ReconstructMode::Subdiv, 0.0, &mesh);
-    if (err == Err::Ok) {
-        uploadToGPU(mesh.verts, mesh.idx, mesh.vCnt, mesh.iCnt);
+    if (ReconstructAA(cloud.data(), cloud.size(),
+                      ReconstructMode::Subdiv, 0.0, &mesh) == Err::Ok) {
+        upload(mesh.verts, mesh.idx, mesh.vCnt, mesh.iCnt);
         FreeMesh(&mesh);
     }
 }
 ```
 
----
+## 📝 ログ & デバッグ
 
-## ⏱ 性能と最適化の歩み
+LogFn を渡すと、Emoji + 計測付きログが得られます。
 
-| バージョン | 実装                     | 点数   | 処理時間     |
-|------------|--------------------------|--------|--------------|
-| 初期       | NetTopologySuite (C#)     | 30k    | ≈ 380 ms     |
-| 1st        | OpenCvSharp4 Subdiv2D     | 30k    | ≈ 140 ms     |
-| 2nd        | ネイティブ OpenCV 4.11    | 30k    | ≈ 82 ms      |
-| 現行       | CGAL + 最適化             | 30k    | ≈ 32 ms      |
-
-**測定環境**：Intel® Core™ i7-12700H / Windows 11 / MSVC 19.39
-
----
-
-## 🧩 ログ & デバッグ
-
-`LogFn` コールバックを渡すだけで、段階別の実行時間を出力可能です。
-
-```cpp
-void myLog(const char* s) { std::puts(s); }
-
-ReconstructAA(pc, n, ReconstructMode::Subdiv, 0, &mesh, myLog);
-
-/* 出力例
+```yaml
 🔄 ReconstructAA: begin
 📦 use flat grid
-🔄 Delaunay       14.21 ms
-✅ ReconstructAA: ok            32.47 ms
-*/
+🔄 Delaunay     14.18 ms
+✅ ReconstructAA: ok        32.45 ms
 ```
 
----
+## ⏱️ 性能スナップショット
 
-## ⚙️ オプションマクロと依存ライブラリ
+| 実装               | 点数    | 処理時間*    |
+|--------------------|---------|---------------|
+| CGAL(Release/O2, AVX2) | 30 k | ≈ 32 ms       |
+| OpenCV Subdiv2D     | 30 k   | ≈ 82 ms       |
 
-| マクロ        | 効果                         | 追加依存         |
-|---------------|------------------------------|------------------|
-| `USE_CGAL`    | CGAL Delaunay を使用（最速） | CGAL ≥ 5.6       |
-| `_OPENMP`     | 並列法線計算を有効化         | OpenMP           |
-| `FR_DLL_STATIC` | 静的ライブラリを生成         | なし             |
+\* i7-12700H / Win 11 / MSVC 19.39・OpenMP ON 時計測。
 
----
+## ⚙️ ビルドオプション
 
-## 📜 ライセンス
+| マクロ        | 効果              | 追加依存      |
+|---------------|-------------------|---------------|
+| USE_CGAL      | CGAL Delaunay 使用 | CGAL ≥ 5.6    |
+| _OPENMP       | 並列化有効化       | OpenMP        |
+| FR_DLL_STATIC | 静的ライブラリ生成 | なし          |
 
-現在ライセンスは未設定のため **商用利用不可** とします。  
-**商用利用を希望される場合は作者までお問い合わせください。**
+## 🖇️ ライセンス
+
+現在ライセンス未設定。  
+商用・再配布を希望される場合は作者までご連絡ください。
+
+## 備考
+
+DLL ビルド後に `.def` ファイルでエクスポート順序を固定しています。  
+Win32 では `__declspec(dllexport)`、他プラットフォームは `extern "C"` で公開。
