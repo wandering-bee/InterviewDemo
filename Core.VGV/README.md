@@ -27,15 +27,6 @@
 
 ---
 
-## 3. 🆕 今バージョン（v2）での主な追加機能
-
-- **Shader ホットスワップ**：GLSL を ProgramBinary キャッシュから即時更新  
-- **視錐台カリング**：CPU 側 AABB による描画最適化  
-- **sRGB / 異方性フィルタ対応**：色再現性とテクスチャ品質向上  
-- **Instancing 準備**：VertexArrayBindingDivisor による per-instance 属性対応
-
----
-
 ## 4. 🧩 全体アーキテクチャ
 
 ```
