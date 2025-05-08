@@ -1,0 +1,12 @@
+D:\CodeHub\ViridisNetSolution\Core.Net\bin\Debug\net8.0-windows10.0.19041.0\Core.Net.deps.json
+D:\CodeHub\ViridisNetSolution\Core.Net\bin\Debug\net8.0-windows10.0.19041.0\Core.Net.dll
+D:\CodeHub\ViridisNetSolution\Core.Net\bin\Debug\net8.0-windows10.0.19041.0\Core.Net.pdb
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\Core.Net.csproj.AssemblyReference.cache
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\Core.Net.GeneratedMSBuildEditorConfig.editorconfig
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\Core.Net.AssemblyInfoInputs.cache
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\Core.Net.AssemblyInfo.cs
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\Core.Net.csproj.CoreCompileInputs.cache
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\Core.Net.dll
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\refint\Core.Net.dll
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\Core.Net.pdb
+D:\CodeHub\ViridisNetSolution\Core.Net\obj\Debug\net8.0-windows10.0.19041.0\ref\Core.Net.dll
