@@ -4,6 +4,14 @@
 
 ---
 
+### 🔍 GUI
+
+![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/Core.VGV.png)
+
+---
+
+---
+
 ## 1. 🎯 目的
 
 ランダムで生成した点群ストリーム (XYZ + RGBA) を――
