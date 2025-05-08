@@ -62,11 +62,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\CodeHub\\ViridisNetSolution\\Core.Net\\Core.Net.csproj",
+      "projectUniqueName": "c:\\Users\\YU_ZHENYU\\InterviewDemo\\Core.Net\\Core.Net.csproj",
       "projectName": "Core.Net",
-      "projectPath": "D:\\CodeHub\\ViridisNetSolution\\Core.Net\\Core.Net.csproj",
+      "projectPath": "c:\\Users\\YU_ZHENYU\\InterviewDemo\\Core.Net\\Core.Net.csproj",
       "packagesPath": "C:\\Users\\YU_ZHENYU\\.nuget\\packages\\",
-      "outputPath": "D:\\CodeHub\\ViridisNetSolution\\Core.Net\\obj\\",
+      "outputPath": "c:\\Users\\YU_ZHENYU\\InterviewDemo\\Core.Net\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

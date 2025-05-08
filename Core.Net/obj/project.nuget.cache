@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ckDAfkEQuBU=",
+  "dgSpecHash": "d/lsjweg65s=",
   "success": true,
-  "projectFilePath": "D:\\CodeHub\\ViridisNetSolution\\Core.Net\\Core.Net.csproj",
+  "projectFilePath": "c:\\Users\\YU_ZHENYU\\InterviewDemo\\Core.Net\\Core.Net.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\YU_ZHENYU\\.nuget\\packages\\system.io.pipelines\\9.0.4\\system.io.pipelines.9.0.4.nupkg.sha512",
     "C:\\Users\\YU_ZHENYU\\.nuget\\packages\\microsoft.windows.sdk.net.ref\\10.0.19041.57\\microsoft.windows.sdk.net.ref.10.0.19041.57.nupkg.sha512"

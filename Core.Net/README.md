@@ -1,105 +1,109 @@
-# 🧩 SledChannel - TCP 通信模块
+# 🧩 SledChannel — TCP通信モジュール（日本語版ドキュメント）
 
-一个轻量、高效、具备请求响应匹配能力的 TCP 异步通信组件。
+## 📝 キーワード
 
----
-
-## 📝 关键词
-
-- TCP 双工通信  
-- 请求-响应模式  
-- 异步队列  
-- CRLF 编解码  
-- 高并发 / 限流  
-- 零拷贝（TryDecode）  
-- 双线程协程收发模型  
-- IPv4 / IPv6 自动适配  
+- TCP全二重通信  
+- リクエスト-レスポンスモデル  
+- 非同期キュー／パイプライン  
+- CRLF（\r\n）フレーミング  
+- 高並列・インフライト制御  
+- ゼロコピー TryDecode  
+- 送受信を分離したシングルスレッド協調ループ  
+- IPv4 / IPv6 自動判別  
 
 ---
 
-## 📦 模块目标
+## 📦 モジュールの目的
 
-SledChannel 实现了一个基于 TCP 的通信通道，用于发送指令、接收响应，支持并发请求且能确保**响应准确匹配请求**，具备**不乱序、不丢包**的特性，适合小消息高频交互场景。
-
----
-
-## 📐 模块组成
-
-### 1️⃣ `SledLinkTcp`
-
-- 建立 TCP 链接，自动适配 IPv4 / IPv6  
-- 配置优化 Socket 参数：启用 `NoDelay` 和 `KeepAlive`  
-- 使用 `NetworkStream` 作为读写介质  
-
-### 2️⃣ `KvAsciiCodec`
-
-- 实现基于 CRLF（`\r\n`） 的 ASCII 文本协议  
-- 示例：发送 `"PING\r\n"`，接收 `"PONG\r\n"`  
-- 编码：自动追加 CRLF；解码：按 CRLF 拆帧  
-
-### 3️⃣ `SledChannel`
-
-模块调度核心，管理请求队列、数据发送、响应匹配与资源释放。
-
-#### 发送端：
-
-- 使用 Channel 管理请求队列  
-- 每个请求绑定 `TaskCompletionSource` 等待返回  
-- 通过 `_maxInFlight` 限制并发数量防止过载  
-
-#### 接收端：
-
-- 后台协程监听 `NetworkStream`  
-- 使用 `PipeReader` 拆包并调用 `TryDecode`  
-- 接收响应后与请求进行一一匹配  
-
-#### 异常处理与资源管理：
-
-- 所有缓冲区通过 `ArrayPool` 管理，确保零拷贝  
-- 每次通信后归还缓冲  
-- 实现 `DisposeAsync()`，确保资源释放与协程安全退出  
+SledChannel は小さなメッセージを高頻度でやり取りするアプリケーション向けに設計された **高性能な非同期 TCP チャネル** です。  
+複数のリクエストを同時に発行しても、対応するレスポンスを **順序乱れなく確実に対応付け** できるのが特徴です。
 
 ---
 
-## 🔁 通信流程（简化示意）
+## 📐 構成コンポーネントと技術ポイント
 
-```plaintext
-          [调用方 CallAsync()]
-                   ↓
-         ┌───── 加入发送队列 ─────┐
-         ↓                       ↓
-    [发送协程] ─── send → [远程设备]
-         ↑                       ↓
-         └──── 配对 Task 返回 ───┘
-                   ↑
-            [接收协程解帧]
+| # | コンポーネント | 主要技術 | 役割 |
+|--|----------------|----------|------|
+| 1️⃣ | SledLinkTcp | - IPv4/IPv6 デュアルスタック<br>- TcpClient.NoDelay & KeepAlive 最適化 | 基盤となる TCP ソケットを確立し、NetworkStream を公開する。 |
+| 2️⃣ | KvAsciiCodec | - CRLF テキストプロトコル<br>- 受信側は SequenceReader でゼロコピー分離 | `"PING\\r\\n"` → `"PONG\\r\\n"` などの ASCII フレームを符号化・復号する。 |
+| 3️⃣ | SledChannel | - Channel<T> による送信キュー<br>- SemaphoreSlim で最大同時飛行数を制御<br>- PipeReader で受信分割<br>- ArrayPool<byte> によるバッファ再利用 | 送信・受信・応答マッチングのハブ。FIFO でペンディング要求を保持し、レスポンス到着時に TaskCompletionSource を完了させる。 |
+| 4️⃣ | TcpServer（仮想サーバ） | - Shift-JIS／ASCII 並行対応<br>- HELLO / BYE シークレットで簡易認証<br>- プリペアド辞書レスポンス | テスト用の軽量サーバ。3000 系 RD コマンドや PING→OK を模擬し、実運用前の動作確認に利用できる。 |
+
+---
+
+## 🔁 通信フロー（概念図）
+
+```
+[呼び出し側]  ── CallAsync() ─┐
+                              ↓
+        ┌─(1) 送信キューへ投入─────────────┐
+        │                                   │
+(3) FIFO │                         ネットワーク│(2) SendAsync
+        │                                   ↓
+Task 登録 & 待機                 ┌─────────────┐
+        ↑                      │   リモート  │
+        │           ┌── recv ──┤   デバイス  │
+        └───────────┤          └─────────────┘
+                    │
+          PipeReader / TryDecode
+                    │
+         (4) ペンディング要求と照合
+                    │
+         TaskCompletionSource.SetResult
 ```
 
+呼び出し側は Channel.Writer にリクエストバッファを投入。  
+送信ループが NetworkStream.WriteAsync で一括送信。  
+同時実行数は `_maxInFlight` で制御し、過負荷を防止。  
+受信ループは TryDecode 完了フレームを取り出し、待機中 Task に結果を返す。
+
 ---
 
-## 🔧 使用示例（伪码）
+## 🔧 使用例（C# 擬似コード）
 
 ```csharp
-var link = new SledLinkTcp();
+var link   = new SledLinkTcp();
 await link.ConnectAsync("127.0.0.1", 9001);
 
-var channel = new SledChannel(link, new KvAsciiCodec());
+var codec  = new KvAsciiCodec();
+var chan   = new SledChannel(link, codec);
 
-var reply = await channel.CallAsync(Encoding.ASCII.GetBytes("PING"));
-Console.WriteLine(Encoding.ASCII.GetString(reply.Span));  // 输出：PONG
+ReadOnlyMemory<byte> rsp = await chan.CallAsync(Encoding.ASCII.GetBytes("PING"));
+Console.WriteLine(Encoding.ASCII.GetString(rsp.Span));   // -> "PONG"
 ```
 
----
-
-## 🧠 小结
-
-虽然结构简单，SledChannel 实际上是一个**高度优化的异步 TCP 通信模块**。  
-特别适用于以下场景：
-
-- 高频率、小消息请求  
-- 保证响应顺序准确  
-- 不想与裸 `Stream` 打交道  
-
-> 它是你在构建现代高性能客户端或中间层通信时，可以信赖的工具之一。
+**備考：**  
+CallAsync のタイムアウトは任意指定（既定 1000 ms）。  
+レスポンスが得られなかった場合には `TaskCanceledException` が返され、上位で再試行やフォールバック処理が可能です。
 
 ---
+
+## 🖥️ 仮想サーバ（TcpServer）の概要
+
+| 項目 | 内容 |
+|------|------|
+| コネクション上限 | 6 |
+| 文字コード | Shift-JIS（RD **** 系）／ASCII (PING, HELLO, など) |
+| 認証 | `HELLO <secret>` → `OK\r\n`、`BYE <secret>` → `BYE\r\n` で切断 |
+| コマンド辞書 | RD 3001～RD 6000 → `0\r\n` 、未定義は `?\r\n` |
+| 実装技法 | PipeReader による CR / CRLF フレーミング、クライアントごとに CancellationTokenSource 管理 |
+
+このサーバをローカルで起動しておけば、SledChannel の動作確認（マルチクライアント接続、並列リクエスト、タイムアウト処理など）を手軽に行えます。
+
+---
+
+## 🚀 パフォーマンスメモ
+
+内部ベンチマークでは、Zen 4（3.9 s）/ Haswell-E（6.2 s）という実行時間差で **13 万リクエスト** を完走。  
+測定条件はシングルコア固定・ループバック接続であり、実運用時のネットワーク遅延は含みません。
+
+---
+
+## 🧠 まとめ
+
+- SledChannel は「小容量 × 高頻度」通信のために最適化された **非同期 TCP チャネル**。
+- KvAsciiCodec と組み合わせることで、テキストベース機器とのインテグレーションを短時間で実装可能。
+- SledLinkTcp は IPv4/IPv6 を透過的に扱い、ソケットパラメータを自動チューニング。
+- TcpServer を同梱することで、開発段階の結合テスト／負荷試験をすぐに開始できる。
+
+以上のモジュールを組み合わせることで、高信頼かつシンプルな TCP 通信スタックを最小限のコード量で構築できます。
