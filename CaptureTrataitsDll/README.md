@@ -100,6 +100,8 @@ LogFn を渡すと、Emoji + 計測付きログが得られます。
 | CGAL(Release/O2, AVX2) | 30 k | ≈ 32 ms       |
 | OpenCV Subdiv2D     | 30 k   | ≈ 82 ms       |
 
+0.032 s / 30000 points ≈ 0.94 M pts/s
+
 \* i7-5820k / Win 11 / MSVC 19.39・OpenMP ON 時計測。
 
 ## ⚙️ ビルドオプション
