@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="NetTopologySuite" Version="2.6.0" />
+		<PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20241108" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+		<PackageReference Include="OpenCvSharp4.Windows" Version="4.10.0.20241108" />
+		<PackageReference Include="OpenTK" Version="4.9.4" />
+		<PackageReference Include="OpenTK.GLControl" Version="4.0.2" />
+		<PackageReference Include="OpenTK.Graphics" Version="4.9.4" />
+		<PackageReference Include="OpenTK.Mathematics" Version="4.9.4" />
+		<PackageReference Include="Serilog" Version="4.2.0" />
+		<PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+		<PackageReference Include="StbImageSharp" Version="2.30.15" />
+		<ProjectReference Include="..\CaptureTrataitsDll\CaptureTrataitsDll.vcxproj" />
+
+
+		<None Update="VGV.SrcProc\GlslShaders\**\*.glsl">
+			<TargetPath>GlslShaders\%(Filename)%(Extension)</TargetPath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+</Project>
