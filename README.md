@@ -24,15 +24,9 @@
 | モジュール名              | 種別         | 役割                              |
 |---------------------------|--------------|-----------------------------------|
 | `CaptureTrataitsDll`      | C++ DLL      | 点群生成（静的背景＋動的点）     |
-| `Core.Server`             | .NET EXE     | 点群生成 + TCP サーバ送信        |
-| ├─ `ByteCodes`            | -            | 点群フレームのバッファ管理       |
-| ├─ `Hubs`                 | -            | 接続・状態ログの管理             |
-| ├─ `Utilities`            | -            | 通信補助・Socket ラッパー        |
+| `Core.Server`             | .NET EXE(Console)     | 点群生成 + TCP サーバ送信        |
 | `Core.Net`                | .NET ライブラリ | 空間解析アルゴリズム群         |
-| ├─ `DoP`                  | -            | 動的点検出（近傍距離評価）       |
-| ├─ `Kinematics`           | -            | 座標変換・高度補正               |
-| ├─ `Utilities`            | -            | SDK 抽象化（未使用）             |
-| `Core.VGV`                | （モデル展示用）   | GPU可視化エンジン（将来拡張用） |
+| `Core.VGV`                | WinForms + D3D   | GPU可視化エンジン（将来拡張用） |
 | `Demo.Showcase.App`       | WinUI3アプリ    | 点群描画クライアント             |
 
 ---
