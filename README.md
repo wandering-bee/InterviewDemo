@@ -33,7 +33,7 @@
 | ├─ `Kinematics`           | -            | 座標変換・高度補正               |
 | ├─ `Utilities`            | -            | SDK 抽象化（未使用）             |
 | `Core.VGV`                | （未使用）   | GPU可視化エンジン（将来拡張用） |
-| `Demo.Showcase.App`       | WPFアプリ    | 点群描画クライアント             |
+| `Demo.Showcase.App`       | WinUI3アプリ    | 点群描画クライアント             |
 
 ---
 
