@@ -8,7 +8,7 @@
 
 ### 🔍 GUI
 
-![3D Visualizer](./screenshots/pointcloud_render.png)
+![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/Main.png)
 
 ---
 
