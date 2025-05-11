@@ -4,11 +4,10 @@
 
 ---
 
-### 🔍 GUI
+## 🔍 GUI
 
+![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/Core.Axone.png)
 
-
----
 
 ---
 
