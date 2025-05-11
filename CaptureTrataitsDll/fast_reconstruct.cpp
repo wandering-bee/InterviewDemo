@@ -38,9 +38,6 @@ using cv::Subdiv2D;
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Delaunay_triangulation_2.h>
 #include <CGAL/tags.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Delaunay_triangulation_2.h>
-#include <CGAL/tags.h>      
 #endif
 
 using namespace fr::grid;
@@ -166,7 +163,6 @@ Err ReconstructAA(const Vec3f* pc, uint32_t n,
             tris2d.emplace_back(a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
         }
 #else
-        // OpenCV Subdiv2D 单线程备份实现
         Rect rect(int(std::floor(minX)) - 1,
             int(std::floor(minY)) - 1,
             std::max(2, int(std::ceil(maxX - minX)) + 3),

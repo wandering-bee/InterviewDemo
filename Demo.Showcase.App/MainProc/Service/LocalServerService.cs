@@ -55,21 +55,47 @@ namespace MainProc.Service
             await WaitForReadyAsync(_proc);
         }
 
+
+        #region StopAsync - 让外部拿到 Exited 通知
         public async Task StopAsync()
         {
             if (_proc is not { HasExited: false } || _secret == null) return;
 
-            // 1. 通过 stdin 发送退出指令
+            // ① 发送优雅退出指令
             if (_proc.StandardInput != null)
             {
                 await _proc.StandardInput.WriteLineAsync($"EXIT {_secret}");
                 await _proc.StandardInput.FlushAsync();
             }
 
-            // 2. 等待优雅退出，否则强杀
-            var exited = await Task.Run(() => _proc.WaitForExit(1000));
-            if (!exited) _proc.Kill();
+            // ② 等待优雅退出，否则强杀
+            var exited = await Task.Run(() => _proc!.WaitForExit(1000));
+            if (!exited) _proc!.Kill();
+
+            // ③ 手动抛 Exited（若底层事件还没触发）
+            OnProcessExited();
         }
+        #endregion
+
+        #region Internals - 统一处理进程退出
+        private void HookProcess(Process proc)
+        {
+            _proc = proc;
+            _proc.EnableRaisingEvents = true;
+            _proc.Exited += (_, __) => OnProcessExited();
+        }
+
+        private void OnProcessExited()
+        {
+            // 保证只抛一次事件
+            if (_proc is not { HasExited: true }) return;
+
+            Exited?.Invoke(this, EventArgs.Empty);     // 通知外部
+            _proc.Dispose();
+            _proc = null;
+            _secret = null;
+        }
+        #endregion
 
         private static async Task WaitForReadyAsync(Process proc)
         {

@@ -1,0 +1,14 @@
+#region IDE - Visual Studio
+# 本地 VS 的工作缓存，无需纳入版本控制
+.vs/
+#endregion
+
+#region Build Artifacts
+# C#/C++ 编译输出
+bin/
+obj/
+#endregion
+
+#region (Reserved)
+# 你可以在这里继续追加其他要忽略的路径或文件规则
+#endregion

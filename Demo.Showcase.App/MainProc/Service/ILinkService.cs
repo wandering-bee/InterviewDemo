@@ -15,6 +15,9 @@ namespace MainProc.Service
         Task<bool> ConnectAsync(string ip, int port);
         Task<ReadOnlyMemory<byte>> CallAsync(ReadOnlyMemory<byte> payload, int timeoutMs = 3000);
         bool IsConnected { get; }
+        Task DisconnectAsync();        // ← 新增
+        event Action? Disconnected;    // ← 新增
+        event Action<string>? CallIgnored;          // ← 新增
     }
 
 

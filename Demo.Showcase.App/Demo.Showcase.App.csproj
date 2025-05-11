@@ -44,7 +44,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250401001" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core.Net\Core.Net.csproj" />
+    <ProjectReference Include="..\Core.SLED\Core.SLED.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="App.xaml">

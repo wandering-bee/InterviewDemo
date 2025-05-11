@@ -1,19 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Extend;
 using Windows.UI;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -25,6 +17,9 @@ using MainProc;
 using System.ComponentModel;
 using Sled.Core;
 using System.IO.Pipes;
+using Demo.Showcase.Extend;
+using Windows.Graphics;
+using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -43,16 +38,26 @@ namespace Demo.Showcase
             this.ExtendsContentIntoTitleBar = true;
             this.SetTitleBar(CustomTitleBar);
 
+            const int w = 1280;   // 目标宽度
+            const int h = 800;    // 目标高度
+
+            IntPtr hwnd = WindowNative.GetWindowHandle(this);
+            WindowId wid = Win32Interop.GetWindowIdFromWindow(hwnd);
+            AppWindow appWin = AppWindow.GetFromWindowId(wid);
+
+            appWin.Resize(new SizeInt32(w, h));   // 立即调整
+
             this.RootPanel.DataContext = VM;
 
             VM.PropertyChanged += OnVmPropertyChanged;
             VM.LogEmitted += OnVmLogEmitted;
+
+            VM.Link.CallIgnored += msg => AddLog($"⚠️ {msg}");
         }
 
         // 把 VM 暴露成属性，方便在代码-behind 里偶尔直接用
-        public MainViewModel VM { get; } = new();
+        public ConnectionViewModel VM { get; } = new();
 
-        private SledLinkTcp? link;        // TCP连接
         private SledChannel? channel;     // 通信通道
 
         private Storyboard? _heartbeat;
@@ -68,7 +73,7 @@ namespace Demo.Showcase
 
         private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(MainViewModel.IsConnected))
+            if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
             {
                 // ① 所有 UI 改动都用 DispatcherQueue，确保在 UI 线程
                 DispatcherQueue.TryEnqueue(() =>
@@ -127,7 +132,6 @@ namespace Demo.Showcase
 
             TBxAddress.UpdateTbStatus(IpAddressSlider, Color.FromArgb(255, 208, 231, 255));
 
-
         }
 
         private void PortSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -168,7 +172,7 @@ namespace Demo.Showcase
 
         private async void RunAxoneButton_Click(object sender, RoutedEventArgs e)
         {
-            const string exePath = @"D:\CodeHub\ViridisNetSolution\Core.VGV\bin\Debug\net8.0-windows\Core.VGV.exe";
+             string exePath = PathHelper.LocateExe("Core.Axone", "Core.Axone.exe");
             string workDir = Path.GetDirectoryName(exePath)!;
             string pipeName = "AxonePipe_" + Guid.NewGuid().ToString("N");
 
@@ -242,7 +246,11 @@ namespace Demo.Showcase
         // 性能压测按钮
         private async void StartBenchmarkButton_Click(object sender, RoutedEventArgs e)
         {
-            if (VM.Link == null) { AddLog("Not connected."); return; }
+            if (!VM.IsConnected)           // ← 改成判断连接状态
+            {
+                AddLog("⚠️ 当前未连接，无法发送消息。");
+                return;                    // 直接退出
+            }
 
             const int N = 10_000;
 
