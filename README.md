@@ -50,8 +50,8 @@ WinUI3 アプリが中心となり、3D ビジュアライザと通信サーバ�
 | モジュール名              | 種別              | 役割                                      |
 |---------------------------|-------------------|-------------------------------------------|
 | `Demo.Showcase.App`       | WinUI3アプリ       | 点群描画クライアント                       |
-| `Core.VGV`                | WinForms + 3D     | 点群生成・再構成・3D表示・Pipe通信          |
-| `Core.Net`                | .NET ライブラリ    | TCP/IP 通信の抽象化（接続・フレーム化など）  |
+| `Core.Axone`                | WinForms + 3D     | 点群生成・再構成・3D表示・Pipe通信          |
+| `Core.SLDE`                | .NET ライブラリ    | TCP/IP 通信の抽象化（接続・フレーム化など）  |
 | `Core.Server`             | .NET EXE(Console) | 通信応答専用サーバ（負荷テスト用途）         |
 | `CaptureTrataitsDll`      | C++ DLL           | Core.VGV 内で呼び出される高速再構成エンジン  |
 
