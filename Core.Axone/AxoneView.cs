@@ -31,7 +31,7 @@ namespace Core.VGV
             InitializeComponent();
             BS.BindCloseButton(this, BtnClose);
             BS.BindBackground(this, Pn_Background);
-            BS.BindDraggable(this, PnSidebar);
+            //BS.BindDraggable(this, PnSidebar);
 
             BtnClose.Font = new Font("Segoe MDL2 Assets", 14F);
             BtnClose.Text = "\uE106";

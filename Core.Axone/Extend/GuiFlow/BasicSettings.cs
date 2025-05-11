@@ -16,7 +16,7 @@ namespace Extend.GuiFlow
         /// <param name="isOld">是否使用旧版本逻辑 , 默认不使用</param>
         public static void BindBackground(Form cForm, Panel cBackground, bool isOld = false) {
 
-            BindDraggable(cForm, cBackground);
+            //BindDraggable(cForm, cBackground);
 
             cBackground.Enabled = true;
             cBackground.TabStop = true;
@@ -30,7 +30,7 @@ namespace Extend.GuiFlow
                 cForm.Deactivate += (sender, e) => cBackground.BackColor = Color.FromArgb(40, 45, 50);
             }
             else {
-                cForm.Activated += (sender, e) => cForm.BackColor = Color.FromArgb(85, 15, 150);
+                cForm.Activated += (sender, e) => cForm.BackColor = ColorTranslator.FromHtml("#FF8C00");
                 cForm.Deactivate += (sender, e) => cForm.BackColor = Color.FromArgb(192, 192, 192);
             }
         }

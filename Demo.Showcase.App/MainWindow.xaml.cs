@@ -20,6 +20,9 @@ using System.IO.Pipes;
 using Demo.Showcase.Extend;
 using Windows.Graphics;
 using WinRT.Interop;
+using System.Threading;
+using Windows.Foundation;
+using Microsoft.UI.Xaml.Controls;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -38,8 +41,8 @@ namespace Demo.Showcase
             this.ExtendsContentIntoTitleBar = true;
             this.SetTitleBar(CustomTitleBar);
 
-            const int w = 1280;   // 目标宽度
-            const int h = 800;    // 目标高度
+            const int w = 1330;   // 目标宽度
+            const int h = 805;    // 目标高度
 
             IntPtr hwnd = WindowNative.GetWindowHandle(this);
             WindowId wid = Win32Interop.GetWindowIdFromWindow(hwnd);
@@ -168,58 +171,171 @@ namespace Demo.Showcase
         }
 
         // ⚙️ 方法：RunAxoneButton_Click —— 启动并建立管道（升级版）
+        /*────────────── 私有字段 ─────────────*/
+        private IntPtr _child = IntPtr.Zero;   // 子进程主窗句柄
+        private Process? _proc;
         private NamedPipeClientStream? pipe;
+        private bool _overlayVisible;
+        private int _lastW, _lastH;   // 记录可见时的尺寸
 
+        #region Axone – Run & Overlay (Top-Level)
         private async void RunAxoneButton_Click(object sender, RoutedEventArgs e)
         {
-             string exePath = PathHelper.LocateExe("Core.Axone", "Core.Axone.exe");
+            #region 0 – 路径准备
+            string exePath = PathHelper.LocateExe("Core.Axone", "Core.Axone.exe");
             string workDir = Path.GetDirectoryName(exePath)!;
             string pipeName = "AxonePipe_" + Guid.NewGuid().ToString("N");
+            #endregion
 
-            try
+            #region 1 – 启动子进程（保持隐藏）
+            _proc = Process.Start(new ProcessStartInfo
             {
-                // ① 启动进程
-                var psi = new ProcessStartInfo
-                {
-                    FileName = exePath,
-                    WorkingDirectory = workDir,
-                    Arguments = $"--pipe {pipeName}",
-                    UseShellExecute = false
-                };
-                Process.Start(psi);
+                FileName = exePath,
+                WorkingDirectory = workDir,
+                Arguments = $"--pipe {pipeName}",
+                UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden     // 👈 初始 SW_HIDE
+            });
+            if (_proc is null) { AxoneStartResultBox.Text = "❌ 启动失败"; return; }
+            #endregion
 
-                // ② 自旋等待（最多 30 s，每秒一次）
-                pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-                for (int retry = 0; retry < 30; retry++)
-                {
-                    try
-                    {
-                        await pipe.ConnectAsync(1000);   // 单次 1 s
-                        if (pipe.IsConnected) break;
-                    }
-                    catch (TimeoutException)
-                    {
-                        // 🔄 继续循环
-                    }
-                }
-
-                if (pipe?.IsConnected == true)
-                {
-                    AxoneStartResultBox.Text = "✅ 管道连接成功";
-                }
-                else
-                {
-                    throw new TimeoutException("WinForms 未建立管道（>30 s）");
-                }
-            }
-            catch (Exception ex)
+            #region 2 – 命名管道连接（≤30 s）
+            pipe?.Dispose();
+            pipe = new NamedPipeClientStream(".", pipeName,
+                                             PipeDirection.InOut,
+                                             PipeOptions.Asynchronous);
+            for (int i = 0; i < 30 && !pipe.IsConnected; i++)
             {
-                AxoneStartResultBox.Text = $"❌ 连接失败: {ex.Message}";
-                pipe?.Dispose();
-                pipe = null;
+                try { await pipe.ConnectAsync(1_000); }
+                catch (TimeoutException) { /* 🔄 retry */ }
             }
+            if (!pipe.IsConnected) { AxoneStartResultBox.Text = "❌ 管道失败"; return; }
+            AxoneStartResultBox.Text = "✅ 管道连接成功";
+            #endregion
+
+            #region 3 – 等主窗口就绪（拿到句柄后立即再隐藏一次）
+            _proc.WaitForInputIdle(10_000);
+            _child = _proc.MainWindowHandle;
+            if (_child == IntPtr.Zero) _child = await WaitForMainWindowAsync(_proc);
+            if (_child == IntPtr.Zero) { AxoneStartResultBox.Text = "❌ 无句柄"; return; }
+
+            Win32.ShowWindow(_child, Win32.SW_HIDE);           // 双保险
+            #endregion
+
+            #region 4 – 去标题边框 + ToolWindow + NoActivate
+            long style = Win32.GetWindowLongPtr(_child, Win32.GWL_STYLE).ToInt64();
+            style &= ~Win32.WS_CAPTION_MASK;
+            Win32.SetWindowLongPtr(_child, Win32.GWL_STYLE, (IntPtr)style);
+
+            long ex = Win32.GetWindowLongPtr(_child, Win32.GWL_EXSTYLE).ToInt64();
+            ex |= Win32.WS_EX_TOOLWINDOW | Win32.WS_EX_NOACTIVATE;
+            Win32.SetWindowLongPtr(_child, Win32.GWL_EXSTYLE, (IntPtr)ex);
+            #endregion
+
+            #region 5 – 位置绑定 & 首次显示
+            _overlayVisible = true;        // 允许 PositionChild 工作
+            PositionChild();               // 计算 + SetWindowPos + SWP_SHOWWINDOW
+
+            // 监听 DPI / 屏幕变化
+            this.AppWindow.Changed += (_, __) => PositionChild();
+            #endregion
+        }
+        #endregion
+
+
+
+        #region Overlay – PositionChild
+        private void PositionChild()
+        {
+            /* 如果当前应隐藏，则直接退出，避免误把窗口复原 */
+            if (!_overlayVisible) return;
+            if (_child == IntPtr.Zero || !Win32.IsWindow(_child)) return;
+            if (GlHost.ActualWidth < 1 || GlHost.ActualHeight < 1) return;
+
+            /* ① GlHost 在 Client 区里的 DIP 坐标 */
+            Point pDip = GlHost.TransformToVisual((UIElement)Content)
+                                .TransformPoint(new Point(0, 0));
+
+            /* ② 主窗 Client 左上角 → 屏幕像素 */
+            IntPtr hMain = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            Win32.POINT org = new() { X = 0, Y = 0 };
+            Win32.ClientToScreen(hMain, ref org);          // org 已是物理像素
+
+            /* ③ 缩放系数 */
+            double s = Win32.GetDpiForWindow(hMain) / 96.0;
+
+            /* ④ 计算屏幕像素坐标 */
+            int x = org.X + (int)Math.Round(pDip.X * s);
+            int y = org.Y + (int)Math.Round(pDip.Y * s);
+            int w = (int)Math.Round(GlHost.ActualWidth * s);
+            int h = (int)Math.Round(GlHost.ActualHeight * s);
+
+            /* ⑤ 记录尺寸供隐藏→恢复 */
+            _lastW = w; _lastH = h;
+
+            /* ⑥ 移动并保持系统级 TopMost */
+            Win32.SetWindowPos(_child, Win32.HWND_TOPMOST,
+                x, y, w, h,
+                Win32.SWP_NOACTIVATE | Win32.SWP_SHOWWINDOW);
+        }
+        #endregion
+
+
+        #region Pivot – 切换时显示/隐藏 Overlay
+        private async void Pivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            bool onAxone = MainPivot.SelectedItem == AxoneTab;
+            await Task.Delay(300);
+            ShowOverlay(onAxone);
         }
 
+        #region Show / Hide Overlay
+        private void ShowOverlay(bool show)
+        {
+            if (_child == IntPtr.Zero || !Win32.IsWindow(_child)) return;
+            if (show == _overlayVisible) return;
+
+            _overlayVisible = show;
+
+            if (show)
+            {
+                /* 先按最新布局校正一次坐标/尺寸 */
+                PositionChild();                        // 不用移动时同样可调用
+                /* 仅改可见性，不动坐标 */
+                Win32.ShowWindow(_child, Win32.SW_SHOWNA);
+            }
+            else
+            {
+                /* 直接隐藏，不改坐标/尺寸 */
+                Win32.ShowWindow(_child, Win32.SW_HIDE);
+            }
+        }
+        #endregion
+
+        #endregion
+
+        #region 布局工具
+        /* 找指定进程的首个可见顶层窗口 */
+        private static Task<IntPtr> WaitForMainWindowAsync(Process p) => Task.Run(() =>
+        {
+            IntPtr found = IntPtr.Zero;
+            for (int i = 0; i < 100 && !p.HasExited && found == IntPtr.Zero; i++)
+            {
+                Win32.EnumWindows((h, _) =>
+                {
+                    Win32.GetWindowThreadProcessId(h, out uint pid);
+                    if (pid == p.Id && Win32.IsWindowVisible(h))
+                    {
+                        found = h; return false;
+                    }
+                    return true;
+                }, IntPtr.Zero);
+                Thread.Sleep(100);
+            }
+            return found;
+        });
+
+        #endregion
 
         // ⚙️ 发送演示：Ping
         private async void SendPingButton_Click(object sender, RoutedEventArgs e)
