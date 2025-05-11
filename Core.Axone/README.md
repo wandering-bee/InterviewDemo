@@ -6,7 +6,7 @@
 
 ## 🔍 GUI
 
-
+![Demo UI](https://raw.githubusercontent.com/wandering-bee/InterviewDemo/main/img/Core.AxoneVar1.00.png)
 
 
 ---
