@@ -139,9 +139,9 @@ Core.VGV.exe
 
 ### 関連モジュールとビルドコマンド
 
-### Core.Net
+### Core.SLDE
 ```
-dotnet build Core.Net/Core.Net.csproj -c Release
+dotnet build Core.Net/Core.SLDE.csproj -c Release
 ```
 依存パッケージ：
 - System.Threading.Channels
@@ -155,9 +155,9 @@ dotnet build Core.Server/Core.Server.csproj -c Release
 - System.IO.Pipelines
 - Spectre.Console
 
-### Core.VGV
+### Core.Axone
 ```
-dotnet build Core.VGV/Core.VGV.csproj -c Release
+dotnet build Core.VGV/Core.Axone.csproj -c Release
 ```
 依存パッケージ：
 
@@ -180,7 +180,7 @@ dotnet run --project Demo.Showcase.App -c Release
 ## 推奨ビルド順
 ※ DLL を最初にビルドし、Core.VGV/bin/... へコピー
 ```
-CaptureTrataitsDll → Core.Net → Core.Server → Core.VGV → Demo.Showcase.App
+CaptureTrataitsDll → Core.SLDE → Core.Server → Core.Axone → Demo.Showcase.App
 ```
 
 ---
