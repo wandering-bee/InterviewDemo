@@ -1,6 +1,6 @@
 ﻿namespace Core.VGV
 {
-    partial class Axone
+    partial class AxoneView
     {
         /// <summary>
         /// Required designer variable.
@@ -34,7 +34,7 @@
             RTBxLogs = new RichTextBox();
             Pn_RTBxLogs = new Panel();
             Pn_Views = new Panel();
-            GLViewMain = new global::Axone.Engine.GLView();
+            GLViewMain = new Axone.Engine.GLView();
             PnSidebar = new Panel();
             BtnOnColor = new Button();
             TBxOnColor = new TextBox();
@@ -93,6 +93,7 @@
             // RTBxLogs
             // 
             RTBxLogs.BorderStyle = BorderStyle.None;
+            RTBxLogs.Font = new Font("Consolas", 10F);
             RTBxLogs.Location = new Point(8, 13);
             RTBxLogs.Name = "RTBxLogs";
             RTBxLogs.Size = new Size(233, 505);
@@ -345,14 +346,14 @@
             BtnClose.Text = "❌";
             BtnClose.UseVisualStyleBackColor = false;
             // 
-            // VGVEngine
+            // Axone
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(986, 666);
             Controls.Add(Pn_Background);
             FormBorderStyle = FormBorderStyle.None;
-            Name = "VGVEngine";
+            Name = "Axone";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "VGVEngine";
             Load += VGVEngine_Load;

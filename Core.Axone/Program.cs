@@ -12,7 +12,7 @@ namespace Core.VGV
         static void Main()
         {
             ApplicationConfiguration.Initialize();   // .NET 8 模板
-            Application.Run(new Axone());
+            Application.Run(new AxoneView());
         }
     }
 }

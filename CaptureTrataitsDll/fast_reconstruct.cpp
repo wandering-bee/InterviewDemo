@@ -67,7 +67,7 @@ Err ReconstructAA(const Vec3f* pc, uint32_t n,
     if (!outMesh)       return Err::AllocFail;   // Mesh 指针必须非空
     if (!pc || n < 3)   return Err::EmptyInput;  // 点云不足三点无法构面
 
-    _log(log, "🔄", "ReconstructAA: begin");   // 🔄 开始日志
+    _log(log, fr::log::Tag::Begin, "ReconstructAA: begin");        // 🔄 开始日志
 
     /* --- 编译期常量 ---------------------------------------------------- */
     constexpr double CELL_SIZE = 1e-4;       // 每格物理尺寸 0.1 µm
@@ -118,14 +118,14 @@ Err ReconstructAA(const Vec3f* pc, uint32_t n,
             size_t pos = size_t(ix) + size_t(iy) * gridW;
             if (grid[pos] == -1) grid[pos] = int32_t(i); // 保留首索引
         }
-        _log(log, "📦", "use flat grid");
+        _log(log, fr::log::Tag::Grid, "use flat grid");               // 📦
     }
     else {
         // 👉 稀疏 map 路径：跨度巨大时避免巨大数组
         umap.reserve(n * 2);                      // 预留避免 rehash
         for (uint32_t i = 0; i < n; ++i)
             umap.emplace(makeKey(pc[i].x, pc[i].y), i);
-        _log(log, "📦", "use unordered_map fallback");
+        _log(log, fr::log::Tag::Grid, "use unordered_map fallback");  // 📦
     }
 
     // 👉 统一查询接口：坐标 → 原数组索引；闭包捕获 useGrid + 容器引用
@@ -284,7 +284,7 @@ Err ReconstructAA(const Vec3f* pc, uint32_t n,
     outMesh->vCnt = n;
     outMesh->iCnt = triCnt;
 
-    _log(log, "✅", "ReconstructAA: ok");       // ✅ 结束日志
+    _log(log, fr::log::Tag::Ok, "ReconstructAA: ok");           // ✅ 结束日志
     return Err::Ok;
 }
 

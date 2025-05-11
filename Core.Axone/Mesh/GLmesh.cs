@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Axone.Core;
 using OpenCvSharp;
 using System.Runtime.InteropServices;
+using SLPush;
 
 namespace Axone.Meshing;
 
@@ -24,7 +25,7 @@ internal enum Err : uint { Ok = 0, EmptyInput = 1, AllocFail = 2 }
 internal static partial class Native
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate void LogFn([MarshalAs(UnmanagedType.LPStr)] string msg);
+    internal delegate void LogFn([MarshalAs(UnmanagedType.LPUTF8Str)] string msg);
 
     [DllImport("CaptureTrataitsDll.dll", CallingConvention = CallingConvention.Cdecl)]
     internal static extern Err ReconstructAA(
@@ -63,7 +64,7 @@ public sealed class GLMesh<TVertex> where TVertex : unmanaged {
         return await Task.Run(() =>
             CaptureTrataits.ReconstructAB(
                 cloud, mode, topoTolerance,
-                log ?? (s => System.Diagnostics.Debug.WriteLine(s))));
+                log ?? (s =>SL.SendLog(s))));
         //return await CaptureTrataits.ReconstructAA(
         //    cloud , mode , topoTolerance , log ?? (s => System.Diagnostics.Debug.WriteLine(s)));
     }

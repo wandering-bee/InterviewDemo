@@ -20,13 +20,13 @@ using SLPush;
 
 namespace Core.VGV
 {
-    public partial class Axone : Form
+    public partial class AxoneView : Form
     {
 
         public ToggleMenu SettingMenu;
         private ViewEngine _engine = new();
 
-        public Axone()
+        public AxoneView()
         {
             InitializeComponent();
             BS.BindCloseButton(this, BtnClose);
@@ -54,8 +54,8 @@ namespace Core.VGV
                 pipe = new PipeServer(pipeName);
                 pipe.OnMessage += HandlePipeMessage;
 
-                // ✅ 日志
-                SL.SendLog("✅ Pipe server ready: " + pipeName);
+                // ✅ 日志 
+                SL.SendLog("✅ Pipe server ready ~");
             }
 
             CBxModel.SelectedIndex = 0;
